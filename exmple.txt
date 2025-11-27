@@ -1,0 +1,432 @@
+3. Install and Explore Karate and Spring boot testing for automated testing.
+
+✅ 3. Create a Simple API to Test
+
+Example: HelloController.java
+
+@RestController
+public class HelloController {
+
+    @GetMapping("/hello")
+    public String hello() {
+        return "Hello Karate!";
+    }
+}
+
+
+Run the application and verify:
+
+http://localhost:8080/hello
+
+✅ 4. Add Karate Dependency in Maven
+
+In pom.xml, add:
+
+<dependency>
+    <groupId>com.intuit.karate</groupId>
+    <artifactId>karate-junit5</artifactId>
+    <version>1.5.0</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-test</artifactId>
+    <scope>test</scope>
+</dependency>
+
+
+Run:
+
+mvn clean install
+
+✅ 5. Create Karate Test Folder Structure
+
+Inside src/test/java, create:
+
+src/test/java
+ └── examples
+      └── api
+          ├── HelloRunner.java
+          └── hello.feature
+
+✅ 6. Write Karate Feature File
+
+hello.feature
+
+Feature: Test Spring Boot Hello API
+
+Scenario: Validate Hello API
+    Given url 'http://localhost:8080/hello'
+    When method get
+    Then status 200
+    And match response == 'Hello Karate!'
+
+✅ 7. Create Karate Test Runner
+
+HelloRunner.java
+
+package examples.api;
+
+import com.intuit.karate.junit5.Karate;
+
+class HelloRunner {
+
+    @Karate.Test
+    Karate testHelloApi() {
+        return Karate.run("hello").relativeTo(getClass());
+    }
+}
+
+✅ 8. Run Karate Tests
+
+From IDE ➝ Run HelloRunner.java
+
+Or use command:
+
+mvn test
+
+✅ 9. View Karate Reports
+
+After running test → report created at:
+
+target/karate-reports/karate-summary.html
+
+
+Open it in browser for results.
+
+🚀 Karate + Spring Boot Advanced Setup (Optional)
+⭐ Inject Spring Boot into Karate (integration testing)
+
+Add dependency:
+
+<dependency>
+    <groupId>com.intuit.karate</groupId>
+    <artifactId>karate-spring</artifactId>
+    <version>1.5.0</version>
+    <scope>test</scope>
+</dependency>
+
+
+Then add in feature file:
+
+* configure ssl = true
+
+
+Useful when testing service layers without running server.
+
+
+
+
+
+
+
+
+4. Write a simple program in JavaScript and perform testing using Karate testing.
+
+✅ 1. Prerequisites
+
+Make sure you have:
+
+✔ Java 17+
+✔ Maven
+✔ Docker Desktop installed
+✔ Spring Boot project already containerized
+
+Your project should contain a Dockerfile, for example:
+
+FROM openjdk:17-jdk-slim
+COPY target/app.jar app.jar
+ENTRYPOINT ["java", "-jar", "/app.jar"]
+
+
+Build Docker image:
+
+docker build -t myapp:1.0 .
+
+
+Run container:
+
+docker run -p 8080:8080 myapp:1.0
+
+⭐ 2. Add Spring Boot Test Dependencies
+
+In pom.xml:
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-test</artifactId>
+    <scope>test</scope>
+</dependency>
+
+<!-- For container testing -->
+<dependency>
+    <groupId>org.testcontainers</groupId>
+    <artifactId>junit-jupiter</artifactId>
+    <version>1.19.7</version>
+    <scope>test</scope>
+</dependency>
+
+<dependency>
+    <groupId>org.testcontainers</groupId>
+    <artifactId>mysql</artifactId>
+    <version>1.19.7</version>
+    <scope>test</scope>
+</dependency>
+
+✅ 3. Create a Sample REST API
+
+Example controller to test:
+
+@RestController
+@RequestMapping("/api")
+public class HelloController {
+
+    @GetMapping("/hello")
+    public String hello() {
+        return "Hello from Container!";
+    }
+}
+
+⭐ 4. Writing Unit Tests (Spring Boot Test)
+a) Test Controller Layer
+
+Create file:
+
+src/test/java/com/example/demo/HelloControllerTest.java
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class HelloControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void testHelloApi() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/hello"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Hello from Container!"));
+    }
+}
+
+⭐ 5. Writing Integration Tests With Database Containers (TestContainers)
+Example: Start MySQL container for testing
+
+Create file:
+
+src/test/java/com/example/demo/ContainerIntegrationTest.java
+
+@SpringBootTest
+@Testcontainers
+class ContainerIntegrationTest {
+
+    @Container
+    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
+            .withDatabaseName("testdb")
+            .withUsername("test")
+            .withPassword("test");
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Test
+    void testDatabaseContainer() {
+        User user = new User(null, "Swathi");
+        userRepository.save(user);
+
+        assertEquals(1, userRepository.count());
+    }
+}
+
+
+This automatically:
+✔ Starts MySQL inside Docker
+✔ Runs tests
+✔ Stops container automatically
+
+⭐ 6. End-to-End API Testing Against Running Docker Container
+
+Start your Docker container:
+
+docker run -p 8080:8080 myapp:1.0
+
+
+Create test:
+
+src/test/java/com/example/demo/ApiLiveTest.java
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+class ApiLiveTest {
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Test
+    void testApiRunningInDocker() {
+        String response = restTemplate.getForObject("http://localhost:8080/api/hello", String.class);
+
+        assertEquals("Hello from Container!", response);
+    }
+}
+
+
+This verifies:
+✔ Your dockerized Spring Boot app is up
+✔ REST endpoint is working
+
+⭐ 7. Run All Tests
+
+Use:
+
+mvn test
+
+
+5. Develop test cases for the above containerized application using Spring boot testing.
+
+✅ Step 1: Confirm Your Containerized Application
+
+You already have a Spring Boot application and a Dockerfile like:
+
+FROM openjdk:17-jdk-slim
+COPY target/app.jar app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+
+
+Build image:
+
+docker build -t myapp:1.0 .
+
+
+Run container:
+
+docker run -p 8080:8080 myapp:1.0
+
+✅ Step 2: Add Dependencies for Spring Boot Testing
+
+Open pom.xml, add these in <dependencies>:
+
+1️⃣ Spring Boot Test
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-test</artifactId>
+    <scope>test</scope>
+</dependency>
+
+2️⃣ TestContainers (to test containerized apps)
+<dependency>
+    <groupId>org.testcontainers</groupId>
+    <artifactId>junit-jupiter</artifactId>
+    <version>1.19.7</version>
+    <scope>test</scope>
+</dependency>
+
+✅ Step 3: Create a Test Folder Structure
+src/test/java/
+ └── com.example.demo
+      ├── ControllerTest.java
+      ├── LiveContainerTest.java
+      └── ApplicationContainerTest.java
+
+✅ Step 4: Write Spring Boot Unit Test (MockMvc)
+
+This tests your controller without running Docker.
+
+File: ControllerTest.java
+@SpringBootTest
+@AutoConfigureMockMvc
+class ControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void testHelloApi() throws Exception {
+        mockMvc.perform(get("/api/hello"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Hello from Container!"));
+    }
+}
+
+
+✔ Tests controller logic
+✔ Fast (does not start a server)
+
+✅ Step 5: Write Integration Test Using TestContainers
+
+If your app uses DB (example: MySQL container)
+
+File: ApplicationContainerTest.java
+@SpringBootTest
+@Testcontainers
+class ApplicationContainerTest {
+
+    @Container
+    static MySQLContainer<?> mysql =
+            new MySQLContainer<>("mysql:8.0")
+                    .withDatabaseName("testdb")
+                    .withUsername("test")
+                    .withPassword("test");
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Test
+    void testDatabaseWithContainer() {
+        User u = new User(null, "Swathi");
+        userRepository.save(u);
+
+        assertEquals(1, userRepository.count());
+    }
+}
+
+
+✔ Starts MySQL inside Docker automatically
+✔ Runs integration test
+✔ Auto-stops container after test
+
+✅ Step 6: Write Test to Hit the Running Docker Container
+
+Start your app container:
+
+docker run -p 8080:8080 myapp:1.0
+
+
+Now create:
+
+File: LiveContainerTest.java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+class LiveContainerTest {
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Test
+    void testApiRunningInDocker() {
+        String url = "http://localhost:8080/api/hello";
+
+        String response = restTemplate.getForObject(url, String.class);
+
+        assertEquals("Hello from Container!", response);
+    }
+}
+
+
+✔ Tests the real running container
+✔ Full end-to-end test
+
+✅ Step 7: Run All Test Cases
+
+Use:
+
+mvn test
+
+
+Or run tests in IntelliJ / VS Code.
+
+You will see reports in:
+
+target/surefire-reports/
+
+⭐ Final Output Test Cases Achieved
+✔ Unit Test (MockMvc) – Controller Layer
+✔ Integration Test – Database + Spring Boot
+✔ End-to-End Test – Running Docker Container
+✔ Fully Automated with JUnit + TestContainers
